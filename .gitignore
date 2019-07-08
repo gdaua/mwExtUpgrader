@@ -4,6 +4,10 @@
 # Phpstorm
 /.idea/*
 
+# Work dir
+/wd/*
+*.bak
+
 # Composer
 /vendor
 /composer.lock

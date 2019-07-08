@@ -29,6 +29,9 @@ use RazeSoldier\MWExtUpgrader\{
 };
 use Symfony\Component\Console\{
 	Command\Command,
+	Input\InputArgument,
+	Input\InputDefinition,
+	Input\InputOption,
 	Input\InputInterface,
 	Output\OutputInterface,
 	Helper\QuestionHelper,
@@ -39,8 +42,100 @@ use Symfony\Component\Console\{
 
 class DefaultCommand extends Command {
 	protected static $defaultName = 'exec:update';
+	// protected $mode;
+	private  $mode;
+
+	protected function execute_mode($mode){
+
+		$this->_exec_mode = $mode;
+	}
+
+	protected function configure()
+	{
+		$this
+			->setDefinition(
+				new InputDefinition([
+					new InputOption('batch', 'b', InputOption::VALUE_NONE, "Force 'batch' execution mode"),
+                    new InputOption('interactive', 'i', InputOption::VALUE_NONE, "Force 'interactive' execution mode"),
+                    new InputOption('mw-path', 'p', InputOption::VALUE_OPTIONAL, "Absolute path to the MediaWiki directory, like: mediawiki/w/ "),
+                    new InputOption('mw-version', '', InputOption::VALUE_OPTIONAL, "Set correct MediaWiki version number"),
+                ])
+            );
+	}
 
 	protected function execute(InputInterface $input, OutputInterface $output) {
+		
+		$exec_batch = $input->getOption('batch');
+		$exec_interactive = $input->getOption('interactive');
+		$exec_interactive_n = $input->getOption('no-interaction');
+		
+		if( $exec_batch | $exec_interactive_n ){
+			$this->mode = "batch_execute";
+		} else {
+			$this->mode = "interactive_execute";
+		}
+		
+		#$res = $this->interactive_execute($input,$output);
+		$mode = $this->mode;
+		
+		return ($this->$mode($input,$output));
+	}
+
+	protected function batch_execute(InputInterface $input, OutputInterface $output) {
+		$exec_batch = $input->getOption('batch');
+		$exec_interactive = $input->getOption('interactive');
+
+		$path = $input->getOption('mw-path');
+
+		if (!$path){
+			return 1;
+		}
+
+		MediaWikiInstance::checkPath($path);
+		$abs_path = realpath($path);
+		$mw = new MediaWikiInstance($abs_path);
+		$version = $input->getOption('mw-version');
+
+		if ( $version === null | $version === FALSE ) {
+			$formatVersion = $mw->getVersion()->getFormatVersion();
+			foreach ($formatVersion as $key => $value) {
+				if ( $key == "small" ){
+					if ( strval($value) === strval(0) ){
+						$targetVersion = $mw->getVersion()->getMainPart();
+						break;
+					} else {
+						$targetVersion = $mw->getVersion()->getRawVersion();
+						break;
+					}
+				}
+			}
+
+		} else {
+			$targetVersion = $version;
+		}
+
+		// var_dump($version);
+		/** @var UpgradeTarget[] $targets */
+
+		$targets = $this->getUpgradeTarget($mw->getExtDir(), $mw->getSkinDir());
+		if ($targets === []) {
+			$output->writeln('Nothing needs to be upgraded');
+			return 0;
+		}
+
+		// $targetVersion = $this->askTargetVersion($asker, $input, $output, $mw->getVersion()->getMainPart());
+
+		$this->handleTarget($targets, $targetVersion, $output);
+		if ($targets === []) {
+			$output->writeln('Nothing needs to be upgraded');
+			return 0;
+		}
+
+		$this->doUpgrade($targets, $output);
+		return 0;
+	}
+
+	protected function interactive_execute(InputInterface $input, OutputInterface $output) {
 		/** @var QuestionHelper $asker */
 		$asker = $this->getHelper('question');
 
