@@ -34,7 +34,7 @@ try {
     $metadata = [
         'BootstrapFile' => $bootstrapFilename,
         'Project Name' => 'mwExtUpgrader',
-        'Project repository' => 'https://github.com/RazeSoldier/mwExtUpgrader'
+        'Project repository' => 'https://github.com/gdaua/mwExtUpgrader'
     ];
     $phar->setMetadata( $metadata );
 } catch ( UnexpectedValueException $e ) {
