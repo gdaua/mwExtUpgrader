@@ -61,7 +61,9 @@ class UpgradeTask {
 	 * Create a tempfile and register a hook that make sure delete it when script exit
 	 */
 	private function makeTmp() : string {
-		$filename = tempnam(sys_get_temp_dir(), 'mwe');
+		$filename_new = tempnam(sys_get_temp_dir(), 'mwe');
+		$filename = $filename_new.".tar";
+		rename($filename_new, $filename);
 		register_shutdown_function(function () use ($filename) {
 			if (file_exists($filename)) {
 				unlink($filename);
