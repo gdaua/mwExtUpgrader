@@ -20,10 +20,33 @@
  * @file
  */
 
-$pharName = 'mwExtUpgrader.phar';
+function fatal($msg){
+    fwrite(STDERR, "[FATAL]: $msg\n");
+    exit(1);
+}
+
+
+$buildDir = './build';
+$pharName = 'mw-ext-upgrader.phar';
 $bootstrapFilename = 'run.php';
+
 try {
-    $phar = new Phar( $pharName );
+
+    if (file_exists($buildDir)) {
+        if (is_file ( $buildDir ) ){
+            fatal("Can not use '$buildDir' - already exists and is a file");
+        } elseif (!is_dir($buildDir)){
+            fatal("Can not use '$buildDir' - already exists and is not a directory");
+        } elseif (is_dir($buildDir)){
+            rmdir($buildDir);
+        }
+    }
+
+    if (!file_exists($buildDir)) {
+        mkdir("$buildDir");
+    }
+
+    $phar = new Phar( "$buildDir/$pharName" );
     $includeRegex = '/\.php$/'; // Includes all .php file
     $phar->buildFromDirectory( __DIR__, $includeRegex );
     $phar->delete( basename( __FILE__ ) ); // Ignore this build script
@@ -45,8 +68,8 @@ try {
     echo $e;
 }
 
-if ( !file_exists( $pharName ) ) {
+if ( !file_exists( "$buildDir/$pharName" ) ) {
     trigger_error( "Build failed, unknown error.\n" , E_USER_ERROR);
 } else {
-    echo "Build successfully, saved as $pharName.\n";
+    echo "Build successfully, saved as $buildDir/$pharName.\n";
 }

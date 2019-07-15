@@ -13,3 +13,5 @@
 /composer.lock
 /composer.local.json
 /composer.phar
+/mwExtUpgrader.phar
+/build/*
